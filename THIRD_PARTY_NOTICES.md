@@ -208,7 +208,8 @@ and makes no claim to their separately described patent-license coverage.
 New support dependencies are **wide 1.7.0** and **safe_arch 1.2.0**
 (Zlib OR Apache-2.0 OR MIT), and build-time **nasm-rs 0.3.2**
 (MIT OR Apache-2.0). Native capture additionally selects **objc2-core-media
-0.3.2** and **objc2-core-video 0.3.2** (Zlib OR Apache-2.0 OR MIT), alongside
+0.3.2**, **objc2-core-video 0.3.2** and **objc2-core-graphics 0.3.2** (Zlib OR Apache-2.0
+OR MIT), alongside
 existing objc2/objc2-foundation/objc2-av-foundation, block2 and dispatch2
 bindings. CoreMedia, CoreVideo and AVFoundation remain macOS system frameworks.
 Camera and codec dependencies ship on supported platforms in the standard build. Their

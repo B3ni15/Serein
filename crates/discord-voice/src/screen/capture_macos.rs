@@ -30,14 +30,36 @@ fn initialize() {
 	});
 }
 
+/// Pixel size and refresh rate of a display's current mode; zeros when unavailable.
+fn display_mode(display: u32) -> (u32, u32, u32) {
+	use objc2_core_graphics::{CGDisplayCopyDisplayMode, CGDisplayMode};
+	let Some(mode) = CGDisplayCopyDisplayMode(display) else {
+		return (0, 0, 0);
+	};
+	let size = |pixels: usize| u32::try_from(pixels).unwrap_or(0);
+	let refresh = CGDisplayMode::refresh_rate(Some(&mode));
+	(
+		size(CGDisplayMode::pixel_width(Some(&mode))),
+		size(CGDisplayMode::pixel_height(Some(&mode))),
+		if refresh.is_finite() && refresh > 0.0 {
+			refresh.round().min(1000.0) as u32
+		} else {
+			0
+		},
+	)
+}
+
 pub(crate) fn sources() -> Result<Vec<Source>, &'static str> {
 	if SCContentSharingPicker::is_available() {
+		// The picker reports no size until a share starts; the main display stands in so
+		// Source, the larger presets and high frame rates stay available.
+		let (width, height, refresh_hz) = display_mode(objc2_core_graphics::CGMainDisplayID());
 		return Ok(vec![Source {
 			id: SourceId::SystemPicker,
 			name: "Choose with the macOS system picker".into(),
-			width: 0,
-			height: 0,
-			refresh_hz: 0,
+			width,
+			height,
+			refresh_hz,
 		}]);
 	}
 	initialize();
@@ -60,7 +82,7 @@ pub(crate) fn sources() -> Result<Vec<Source>, &'static str> {
 			name: format!("Display {}", display.display_id),
 			width,
 			height,
-			refresh_hz: 0,
+			refresh_hz: display_mode(display.display_id).2,
 		});
 		if sources.len() == MAX_SOURCES {
 			return Ok(sources);

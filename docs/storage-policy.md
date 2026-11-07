@@ -744,8 +744,9 @@ offline fixture and a pending conversation load are never preloaded. No disk dat
 
 Resting on a person for 300 ms, or pressing them, requests the profile their card would open,
 with the same server context and query, under the same one-in-flight and twelve-per-minute limits
-(counted separately from conversations). An unopened result goes into the existing 32-entry,
-1 MiB, 15-minute profile cache; a card opened while it is in flight adopts the request. Profiles
+(counted separately from conversations). An unopened result goes into the existing 128-entry,
+4 MiB profile cache; entries are fresh for 15 minutes, after which a card shows the cached profile
+while requesting it again. A card opened while it is in flight adopts the request. Profiles
 already cached or open, webhooks, and the offline fixture are skipped. Resting on the GIF button
 of a closed picker requests its home page (served from the existing ten-minute page cache when
 fresh) and the favorites sync once, and asks the image worker for the favorite preview, the first
