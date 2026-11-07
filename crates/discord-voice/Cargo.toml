@@ -40,6 +40,7 @@ objc2-av-foundation = { version = "=0.3.2", default-features = false, features =
 objc2-foundation = { version = "=0.3.2", default-features = false, features = ["std", "NSDictionary", "NSObject", "NSString", "NSValue"] }
 objc2-core-media = { version = "=0.3.2", default-features = false, features = ["std", "bitflags", "objc2", "objc2-core-video", "CMBase", "CMTime", "CMBlockBuffer", "CMFormatDescription", "CMSampleBuffer"] }
 objc2-core-video = { version = "=0.3.2", default-features = false, features = ["std", "bitflags", "objc2", "CVBase", "CVBuffer", "CVImageBuffer", "CVPixelBuffer", "CVReturn"] }
+objc2-core-graphics = { version = "=0.3.2", default-features = false, features = ["std", "CGDirectDisplay"] }
 objc2-core-foundation = { version = "=0.3.2", default-features = false, features = ["std", "CFBase", "CFArray", "CFDictionary", "CFNumber", "CFString"] }
 objc2-video-toolbox = { version = "=0.3.2", default-features = false, features = ["std", "bitflags", "objc2", "objc2-core-media", "objc2-core-video", "VTBase", "VTErrors", "VTSession", "VTCompressionProperties", "VTCompressionSession"] }
 dispatch2 = "=0.3.1"

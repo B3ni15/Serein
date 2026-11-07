@@ -11,8 +11,9 @@ use std::{
 };
 
 /// Recently viewed profiles stay in RAM so reopening a card does not repeat the request.
-pub const CACHE_ENTRIES: usize = 32;
-pub const CACHE_BYTES: usize = 1024 * 1024;
+/// Older entries still open instantly and are refreshed in the background.
+pub const CACHE_ENTRIES: usize = 128;
+pub const CACHE_BYTES: usize = 4 * 1024 * 1024;
 pub const CACHE_TTL: Duration = Duration::from_secs(15 * 60);
 #[derive(Default)]
 pub struct ProfileCache {
@@ -25,13 +26,15 @@ struct CachedProfile {
 	data: UserProfile,
 }
 impl ProfileCache {
-	fn get(&mut self, user: Id, guild: Option<Id>, now: Instant) -> Option<&UserProfile> {
-		self.entries
-			.retain(|entry| now.saturating_duration_since(entry.fetched) < CACHE_TTL);
+	/// The cached profile and whether it is still within [`CACHE_TTL`].
+	fn get(&self, user: Id, guild: Option<Id>, now: Instant) -> Option<(&UserProfile, bool)> {
 		self.entries
 			.iter()
 			.find(|entry| entry.user == user && entry.guild == guild)
-			.map(|entry| &entry.data)
+			.map(|entry| {
+				let fresh = now.saturating_duration_since(entry.fetched) < CACHE_TTL;
+				(&entry.data, fresh)
+			})
 	}
 	fn insert(&mut self, user: Id, guild: Option<Id>, data: UserProfile, now: Instant) {
 		self.entries
@@ -520,7 +523,8 @@ impl State {
 		now: Instant,
 	) -> Option<Command> {
 		self.profile_request = self.profile_request.wrapping_add(1);
-		if let Some(data) = self.profile_cache.get(user, guild, now) {
+		let cached = self.profile_cache.get(user, guild, now);
+		if let Some((data, true)) = cached {
 			self.profile = Some(ProfileView {
 				user,
 				guild,
@@ -531,6 +535,8 @@ impl State {
 			});
 			return None;
 		}
+		// An expired entry is shown while it is refreshed instead of an empty loading card.
+		let stale = cached.map(|(data, _)| data.clone());
 		let allowed = !self.demo
 			&& self.auth == AuthState::Authenticated
 			&& self.gateway_connected
@@ -541,9 +547,9 @@ impl State {
 			guild,
 			request: self.profile_request,
 			loading: allowed,
-			error: (!allowed)
+			error: (!allowed && stale.is_none())
 				.then_some("Profile unavailable while disconnected or outside this session"),
-			data: None,
+			data: stale,
 		});
 		// A card whose profile is already being preloaded waits for that response instead.
 		(allowed
@@ -1419,13 +1425,15 @@ mod tests {
 			assert!(!view.loading && view.error.is_none() && view.data.is_some());
 			// A different server scope is a different profile.
 			assert!(state.request_profile_at(Id(1), Some(Id(9)), now).is_some());
-			// Expired entries are requested again.
+			// Expired entries are requested again but stay visible until the refresh lands.
 			assert!(
 				state
 					.request_profile_at(Id(1), None, now + CACHE_TTL + Duration::from_secs(1))
 					.is_some()
 			);
-			assert!(state.profile_cache.is_empty());
+			let view = state.profile.as_ref().unwrap();
+			assert!(view.loading && view.error.is_none() && view.data.is_some());
+			state.profile_cache.clear();
 			// Bounded by entries and bytes; session invalidation clears everything.
 			for id in 1..=(CACHE_ENTRIES as u64 + 8) {
 				state

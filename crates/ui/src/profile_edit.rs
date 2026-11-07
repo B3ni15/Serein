@@ -487,11 +487,6 @@ fn form(
 					*color =
 						(u32::from(rgb[0]) << 16) | (u32::from(rgb[1]) << 8) | u32::from(rgb[2]);
 				}
-				if design::text_action(ui, &crate::i18n::translate("profile-edit-form-use-default"))
-					.clicked()
-				{
-					enabled = false;
-				}
 			} else if design::text_action(
 				ui,
 				&crate::i18n::translate("profile-edit-form-custom-color"),
@@ -502,6 +497,16 @@ fn form(
 			}
 		},
 	);
+	// Below the colour well: beside it the row is too narrow and overlaps the description.
+	if draft.color.is_some() {
+		ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
+			if design::text_action(ui, &crate::i18n::translate("profile-edit-form-use-default"))
+				.clicked()
+			{
+				enabled = false;
+			}
+		});
+	}
 	if enabled != draft.color.is_some() {
 		// Start from the profile's own colors rather than the app accent.
 		draft.color = enabled.then(|| {
